@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام إدارة المخزون وتجارة الجملة</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>نظام إدارة المخزون والجملة</h1>
+    <nav>
+      <button class="nav-btn active" onclick="switchTab('inventory')">المخزون والمنتجات</button>
+      <button class="nav-btn" onclick="switchTab('pos')">نقطة البيع والفواتير</button>
+      <button class="nav-btn" onclick="switchTab('credits')">سجل الكريديت والديون</button>
+      <button class="nav-btn" onclick="switchTab('broadcast')">إرسال العروض</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- قسم المخزون -->
+    <section id="tab-inventory" class="tab-content active">
+      <div class="card">
+        <h3>إضافة منتج جديد</h3>
+        <form id="productForm" enctype="multipart/form-data">
+          <div class="grid-2">
+            <input type="text" id="p_name" placeholder="اسم المنتج" required>
+            <input type="text" id="p_barcode" placeholder="الباركود (مسح أو كتابة)">
+          </div>
+          <div class="grid-3">
+            <input type="number" id="p_units_box" placeholder="عدد الحبات في الكرتونة" value="1" required>
+            <input type="number" id="p_stock" placeholder="إجمالي المخزون (بالحبة)" required>
+            <input type="number" step="0.5" id="p_cost" placeholder="سعر التكلفة للحبة (درهم)">
+          </div>
+          <div class="grid-2">
+            <input type="number" step="0.5" id="p_price_unit" placeholder="سعر بيع الحبة (درهم)" required>
+            <input type="number" step="0.5" id="p_price_box" placeholder="سعر بيع الكرتونة (درهم)" required>
+          </div>
+          <input type="file" id="p_image" accept="image/*">
+          <button type="submit" class="btn primary">حفظ المنتج في المخزن</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>قائمة المخزون الحالي</h3>
+        <table id="productsTable">
+          <thead>
+            <tr>
+              <th>الصورة</th>
+              <th>المنتج</th>
+              <th>الباركود</th>
+              <th>المتوفر (حبة)</th>
+              <th>المتوفر (كرتونة تقريباً)</th>
+              <th>سعر الحبة</th>
+              <th>سعر الكرتونة</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- قسم نقطة البيع والكريديت -->
+    <section id="tab-pos" class="tab-content">
+      <div class="card">
+        <h3>إنشاء فاتورة بيع جديدة</h3>
+        <div class="grid-2">
+          <select id="posClientSelect"><option value="">-- اختر التاجر --</option></select>
+          <input type="text" id="posSearch" placeholder="بحث باسم المنتج أو الباركود">
+        </div>
+        <div class="table-responsive">
+          <table id="cartTable">
+            <thead>
+              <tr>
+                <th>المنتج</th>
+                <th>نوع البيع</th>
+                <th>الكمية</th>
+                <th>السعر المتفق عليه</th>
+                <th>المجموع</th>
+                <th>حذف</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="openProductSelector()">+ إضافة منتج للفاتورة</button>
+
+        <div class="order-summary card mt-3">
+          <div class="grid-3">
+            <div><strong>المجموع: </strong><span id="posSubtotal">0.00</span> درهم</div>
+            <div>
+              <label>التخفيض (Remise):</label>
+              <input type="number" id="posDiscount" value="0" oninput="calculatePOS()">
+            </div>
+            <div><strong>الصافي للدفع: </strong><span id="posFinal">0.00</span> درهم</div>
+          </div>
+          <div class="grid-2 mt-2">
+            <div>
+              <label>المبلغ المدفوع (Avance):</label>
+              <input type="number" id="posPaid" value="0" oninput="calculatePOS()">
+            </div>
+            <div>
+              <label>الباقي كريديت:</label>
+              <span id="posCredit" class="badge-danger">0.00 درهم</span>
+            </div>
+          </div>
+          <button class="btn success mt-3" onclick="submitOrder()">تأكيد العملية وخصم المخزون وتسجيل الكريديت</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- قسم الكريديت والديون -->
+    <section id="tab-credits" class="tab-content">
+      <div class="card">
+        <h3>إضافة تاجر جملة جديد</h3>
+        <form id="clientForm" class="grid-4">
+          <input type="text" id="c_name" placeholder="اسم المحل / التاجر" required>
+          <input type="text" id="c_phone" placeholder="رقم الواتساب (+212...)" required>
+          <input type="text" id="c_city" placeholder="المدينة">
+          <button type="submit" class="btn primary">إضافة تاجر</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>دفتر الديون والكريديت المتبقي</h3>
+        <table id="clientsTable">
+          <thead>
+            <tr>
+              <th>اسم المحل/التاجر</th>
+              <th>المدينة</th>
+              <th>رقم الهاتف</th>
+              <th>مجموع الكريديت المتبقي</th>
+              <th>تسجيل دفعة (سداد)</th>
+              <th>مراسلة بالباقي</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- قسم إرسال العروض -->
+    <section id="tab-broadcast" class="tab-content">
+      <div class="card">
+        <h3>إرسال عروض المنتجات والتخفيضات للتجار</h3>
+        <div class="grid-2">
+          <div>
+            <label>اختر المنتج لإنشاء العرض:</label>
+            <select id="broadcastProduct" onchange="generateOfferText()"></select>
+            <label class="mt-2">حدد سعر العرض الترويجي للكرتونة:</label>
+            <input type="number" id="promoPriceBox" placeholder="سعر العرض الترويجي" oninput="generateOfferText()">
+          </div>
+          <div>
+            <label>معاينة نص الرسالة:</label>
+            <textarea id="offerMessage" rows="6"></textarea>
+            <div class="flex-buttons mt-2">
+              <button class="btn success" onclick="sendWhatsappToAll()">إرسال العرض عبر واتساب</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
